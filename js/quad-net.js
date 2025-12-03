@@ -1,22 +1,15 @@
 function on_init() {
 }
 
-var register_plugin = function (importObject) {
-    importObject.env.ws_connect = ws_connect;
-    importObject.env.ws_is_connected = ws_is_connected;
-    importObject.env.ws_send = ws_send;
-    importObject.env.ws_try_recv = ws_try_recv;
-    importObject.env.ws_close = ws_close;
+var register_plugin = function (context, importObject) {
+    const { js_object, consume_js_object } = context;
 
-    importObject.env.http_make_request = http_make_request;
-    importObject.env.http_try_recv = http_try_recv;
-}
-
-miniquad_add_plugin({ register_plugin, on_init, version: 1, name: "quad_net" });
-
-var quad_socket;
-var connected = 0;
-var received_buffer = [];
+    // Move state inside (was global)
+    var quad_socket;
+    var connected = 0;
+    var received_buffer = [];
+    var uid = 0;
+    var ongoing_requests = {};
 
 function ws_is_connected() {
     return connected;
@@ -67,6 +60,11 @@ function ws_close() {
     if (quad_socket && quad_socket.readyState !== WebSocket.CLOSED) {
         quad_socket.close();
         connected = 0;
+
+        // Clear event handlers and reference for GC
+        quad_socket.onopen = null;
+        quad_socket.onmessage = null;
+        quad_socket = null;
     }
 }
 
@@ -126,3 +124,16 @@ function http_make_request(scheme, url, body, headers) {
 
     return cid;
 }
+
+    // Register FFI functions
+    importObject.env.ws_connect = ws_connect;
+    importObject.env.ws_is_connected = ws_is_connected;
+    importObject.env.ws_send = ws_send;
+    importObject.env.ws_try_recv = ws_try_recv;
+    importObject.env.ws_close = ws_close;
+
+    importObject.env.http_make_request = http_make_request;
+    importObject.env.http_try_recv = http_try_recv;
+};
+
+miniquad_add_plugin({ register_plugin, on_init, version: 1, name: "quad_net" });
