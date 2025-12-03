@@ -6,6 +6,7 @@ var register_plugin = function (importObject) {
     importObject.env.ws_is_connected = ws_is_connected;
     importObject.env.ws_send = ws_send;
     importObject.env.ws_try_recv = ws_try_recv;
+    importObject.env.ws_close = ws_close;
 
     importObject.env.http_make_request = http_make_request;
     importObject.env.http_try_recv = http_try_recv;
@@ -62,6 +63,12 @@ function ws_try_recv() {
     return -1;
 }
 
+function ws_close() {
+    if (quad_socket && quad_socket.readyState !== WebSocket.CLOSED) {
+        quad_socket.close();
+        connected = 0;
+    }
+}
 
 var uid = 0;
 var ongoing_requests = {};
