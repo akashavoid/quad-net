@@ -12,7 +12,9 @@ var register_plugin = function (context, importObject) {
     var ongoing_requests = {};
 
 function ws_is_connected() {
-    return connected;
+    // Check actual WebSocket readyState (1 = OPEN)
+    // Returns 1 only if socket exists and is in OPEN state
+    return quad_socket && quad_socket.readyState === WebSocket.OPEN ? 1 : 0;
 }
 
 function ws_connect(addr) {
@@ -20,6 +22,15 @@ function ws_connect(addr) {
     quad_socket.binaryType = 'arraybuffer';
     quad_socket.onopen = function() {
         connected = 1;
+    };
+
+    quad_socket.onclose = function() {
+        connected = 0;
+    };
+
+    quad_socket.onerror = function(error) {
+        connected = 0;
+        console.error("[quad-net] WebSocket error:", error);
     };
 
     quad_socket.onmessage = function(msg) {
